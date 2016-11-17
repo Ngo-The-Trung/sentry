@@ -22,7 +22,7 @@ from sentry.coreapi import (
     APIError, APIForbidden, APIRateLimited, ClientApiHelper, CspApiHelper,
     LazyData
 )
-from sentry.models import Project, OrganizationOption
+from sentry.models import Project, OrganizationOption, Organization
 from sentry.signals import (
     event_accepted, event_dropped, event_filtered, event_received
 )
@@ -303,6 +303,9 @@ class StoreView(APIView):
             raise APIError('No JSON data was found')
 
         remote_addr = request.META['REMOTE_ADDR']
+
+        if Organization.objects.get_from_cache(id=project.organization_id).flags.suspended:
+            raise APIForbidden('This account has been suspended')
 
         data = LazyData(
             data=data,
